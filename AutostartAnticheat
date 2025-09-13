@@ -1,0 +1,70 @@
+# AutostartAnticheat Version 0.9
+# READ BELOW BEFORE USING SCRIPT
+
+# This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. To run it with ADA, simply put ADA in the same folder and run this script.
+
+# You must set the following variables:
+# TODO
+client = ''
+gui = ''
+
+# beyond this point is the actual code, you can finish reading here
+
+
+
+from time import sleep, time
+import os
+from webbrowser import open as webopen
+import psutil
+from subprocess import Popen
+from importlib import util
+
+# used when it is required to run a thing while continuing to execute
+# I PUT THE POPEN INTO A LIST MUAHUAHUA
+# this is terrible but I couldn't find a better way to run these simulataneously
+progs = []
+def altopen(dir, filename):
+    if not ':' in dir: dir = os.path.expanduser(dir)
+    progs.append(Popen(f"{dir + '\\' + filename}", cwd=f"{dir}", stdout = None, stderr = None)) #, shell=True
+
+# check if a process is open
+# may cause exception, me pls fix
+def procchk(process): # process must be string of file name.extension, e.g. 'Taskmgr.exe'
+    for proc in psutil.process_iter():
+        if proc.name() == process:
+            return True
+    return False # else statement not needed, I feel clever hehehe
+
+print('-- Opening programs --')
+webopen("steam://rungameid/440") # if commented out during debugging, make sure to uncomment
+altopen('E:\\SteamLibrary\\steamapps\\common\\Team Fortress 2\\megaanticheat stuff','client_backend.exe')
+os.popen("E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/gui/index.html")
+
+# taken from stackoverflow
+# ADA could probably be rewritten to make importing not autoexecute but I couldn't figure out how
+if util.find_spec("AutoDemoAnalyzer") is not None: # check to see if ada is found
+    print('-- AutoDemoAnalyzer detected, functionality integrated --')
+    ADA = True
+    gamestarttime = time() # save timestamp for autodemoanalyzer
+else: ADA = False
+
+sleep(3) # buffer in case it opens and closes rapidly or something, takes a while to start tf2 anyways
+
+print('-- Waiting for TF2 --')
+while not procchk('tf_win64.exe'): sleep(1) # wait for tf2 to open
+
+print('-- TF2 detected, waiting for it to close --')
+while procchk('tf_win64.exe'): sleep(1)
+print('-- TF2 closed, waiting 3 seconds --')
+
+sleep(3) # gives some time for MAC to upload any remaining data 
+# can't close browser tabs easily so I leave it for future me
+# future me couldn't figure out how to do this without closing the entire window
+print('-- Closing programs --')
+for item in progs:
+    item.kill()
+
+if ADA: 
+    print('-- Starting AutoDemoAnalyzer --')
+    import AutoDemoAnalyzer # if ada was found earlier, import and run it immediately
+    AutoDemoAnalyzer.analyze(gamestarttime) # run ADA, passing through the start time
