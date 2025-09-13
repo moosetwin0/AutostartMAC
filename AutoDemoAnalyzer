@@ -1,0 +1,91 @@
+# READ BELOW BEFORE USING SCRIPT
+
+# this code can be ran as part of a MAC-autostart script, or on its own.
+# if you aren't sure, you should probably run this in independent mode.
+
+# the demo analyzer can be found at https://github.com/MegaAntiCheat/analysis-template-rust, do not use the /demolyzer repository
+# make sure that you have analyzed a demofile before, so that it generates the cli.exe file
+
+# NOTICE: independent mode is the only one currently implemented, the others will be when I have the time
+
+# if you wish to run this in independant mode (without an autostart script): 
+    # run the script when booting up the game (or at any point before starting to record any demos)
+
+# if you are using my AutostartAnticheat.py script: 
+    # place this script in the same directory as that script, and then run that script to start the game
+
+# if you wish to use this as part of your own (python) autostart script:
+    # place this script in the same directory as your autostart script
+    # at the top of your script, put `from time import time` 
+    # in your autostart script, after it has started the game, put `gamestarttime = time()`
+    # at the end of your autostart script, (after it has closed the game) import it with `import AutoDemoAnalyzer` 
+
+# regardless of what method you use, you will also need to set the following variables:
+
+# set this to the path of your demo analyzer folder:
+analyzerpath = 'PATH' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
+# set this to the path of your TF2 demos folder:
+demospath = 'PATH' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+# optional arguments to be passed to the analyzer, leave blank to just scan the demo with default settings:
+arguments = '' # example: `arguments = '-a the_best_algorithm -p'`
+
+# beyond this point is the actual code, you can finish reading here
+
+
+
+# importing stuff isn't always necessary, but I don't know what is in your autostart script
+from time import time, sleep # for getting the current unix epoch and for waiting, respectively
+import psutil # for checking if tf2 has closed (only used in independant mode)
+import os # a lot of things
+import glob # finding demo files
+import subprocess
+
+def tf2chk(): # check if TF2 is open, taken from AutostartAnticheat
+    for proc in psutil.process_iter():
+        if proc.name() == 'tf_win64.exe':
+            return True
+    return False
+
+# warning: this code does not check that gamestarttime is a valid unix timestamp, and there will be an exception later if it isn't
+try: gamestarttime # check if gamestarttime is defined
+except NameError: mode = 'independent' # gamestarttime is not previously defined, set mode to independent
+else: mode = 'imported' # gamestart time is defined, set mode to imported
+
+if mode == 'imported': # could be merged into above `else:` statement but I chose not to for readability
+    print('import mode detected')
+    ...
+
+if mode == 'independent':
+    print('independent mode detected')
+    # some below code also taken from AA
+    print('waiting for tf2 to open')
+    while not tf2chk(): sleep(1) # wait for tf2 to open
+    gamestarttime = time()
+    print('waiting for tf2 to close')
+    sleep(5) # buffer in case of weird stuff, may not be needed
+    while tf2chk(): sleep(1) # wait for tf2 to close
+
+else: raise Exception('Invalid mode, somehow')
+
+# tf2 has closed, and both modes are synced back up
+
+os.chdir(analyzerpath) # move to analyzer, for later
+
+# get demofiles, taken from stackoverflow
+list_of_files = glob.glob(f'{demospath}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
+uncheckeddemos = []
+print('getting demofiles')
+while True: # loop through latest demos
+    latest_demo = max(list_of_files, key=os.path.getctime) # get creation time of latest demo
+    if os.path.getctime(latest_demo) < gamestarttime: # if demo was made before game was started
+        print('finished checking demofiles, starting analysis')
+        break
+    else:
+        print(f'{latest_demo} is a new demo and will be analyzed')
+        uncheckeddemos.append(latest_demo.replace('\\','/')) # add demo to list, without the weird glob formatting
+        list_of_files.remove(latest_demo) # remove the demo from the previous list, so that we don't keep adding the same demo over and over
+
+for demotocheck in uncheckeddemos: # use the new demos figured out previously
+    # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
+    _ = subprocess.run(f'"{analyzerpath}/target/release/cli.exe" -i "{demotocheck}" {arguments}') # return value of command is assigned to `_`, throwing it away (probably not necessary)
+print('analysis finished, exiting')
