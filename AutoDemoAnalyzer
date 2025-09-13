@@ -1,3 +1,4 @@
+# AutoDemoAnalyzer Version 2
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -18,14 +19,14 @@
     # place this script in the same directory as your autostart script
     # at the top of your script, put `from time import time` 
     # in your autostart script, after it has started the game, put `gamestarttime = time()`
-    # at the end of your autostart script, (after it has closed the game) import it with `import AutoDemoAnalyzer` 
+    # at the end of your autostart script, (after it has closed the game) run it with `import AutoDemoAnalyzer` followed by `AutoDemoAnalyzer.analyze(gamestarttime)`
 
 # regardless of what method you use, you will also need to set the following variables:
 
 # set this to the path of your demo analyzer folder:
-analyzerpath = 'PATH' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
+analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = 'PATH' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
 # optional arguments to be passed to the analyzer, leave blank to just scan the demo with default settings:
 arguments = '' # example: `arguments = '-a the_best_algorithm -p'`
 
@@ -46,46 +47,41 @@ def tf2chk(): # check if TF2 is open, taken from AutostartAnticheat
             return True
     return False
 
+def analyze(importedstarttime): # tf2 has closed, and both modes are synced back up
+    if not __name__ == "__main__": gamestarttime = importedstarttime # have to check this again to get the variable from import
+    os.chdir(analyzerpath) # move to analyzer, for later
+
+    # get demofiles, taken from stackoverflow
+    list_of_files = glob.glob(f'{demospath}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
+    uncheckeddemos = []
+    print('** Getting new demofiles **')
+    while True: # loop through latest demos
+        latest_demo = max(list_of_files, key=os.path.getctime) # get creation time of latest demo
+        if os.path.getctime(latest_demo) < gamestarttime: # if demo was made before game was started
+            print('** Finished looking for demofiles, starting analysis **')
+            break
+        else:
+            print(f'** {latest_demo} is a new demo and will be analyzed **')
+            uncheckeddemos.append(latest_demo.replace('\\','/')) # add demo to list, without the weird glob formatting
+            list_of_files.remove(latest_demo) # remove the demo from the previous list, so that we don't keep adding the same demo over and over
+
+    for demotocheck in uncheckeddemos: # use the new demos figured out previously
+        # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
+        _ = subprocess.run(f'"{analyzerpath}/target/release/cli.exe" -i "{demotocheck}" {arguments}') # return value of command is assigned to `_`, throwing it away (probably not necessary)
+    print('** Analysis finished, press enter to exit AutoDemoAnalyzer **')
+    input() 
+
 # warning: this code does not check that gamestarttime is a valid unix timestamp, and there will be an exception later if it isn't
-try: gamestarttime # check if gamestarttime is defined
-except NameError: mode = 'independent' # gamestarttime is not previously defined, set mode to independent
-else: mode = 'imported' # gamestart time is defined, set mode to imported
-
-if mode == 'imported': # could be merged into above `else:` statement but I chose not to for readability
-    print('import mode detected')
-    ...
-
-if mode == 'independent':
-    print('independent mode detected')
+if __name__ == "__main__": # start independent mode if ran without import
+    print('** independent mode detected **')
     # some below code also taken from AA
-    print('waiting for tf2 to open')
+    print('** Waiting for TF2 to open **')
     while not tf2chk(): sleep(1) # wait for tf2 to open
     gamestarttime = time()
-    print('waiting for tf2 to close')
+    print('** Waiting for TF2 to close **')
     sleep(5) # buffer in case of weird stuff, may not be needed
     while tf2chk(): sleep(1) # wait for tf2 to close
-
-else: raise Exception('Invalid mode, somehow')
-
-# tf2 has closed, and both modes are synced back up
-
-os.chdir(analyzerpath) # move to analyzer, for later
-
-# get demofiles, taken from stackoverflow
-list_of_files = glob.glob(f'{demospath}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
-uncheckeddemos = []
-print('getting demofiles')
-while True: # loop through latest demos
-    latest_demo = max(list_of_files, key=os.path.getctime) # get creation time of latest demo
-    if os.path.getctime(latest_demo) < gamestarttime: # if demo was made before game was started
-        print('finished checking demofiles, starting analysis')
-        break
-    else:
-        print(f'{latest_demo} is a new demo and will be analyzed')
-        uncheckeddemos.append(latest_demo.replace('\\','/')) # add demo to list, without the weird glob formatting
-        list_of_files.remove(latest_demo) # remove the demo from the previous list, so that we don't keep adding the same demo over and over
-
-for demotocheck in uncheckeddemos: # use the new demos figured out previously
-    # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
-    _ = subprocess.run(f'"{analyzerpath}/target/release/cli.exe" -i "{demotocheck}" {arguments}') # return value of command is assigned to `_`, throwing it away (probably not necessary)
-print('analysis finished, exiting')
+    analyze(None) # start analysis immediately
+else: 
+    print('** import mode detected **') # code imported, assume that this code is ran after the game has closed and that gamestarttime is a valid unix timestamp
+    # wait for parent program to run analyze() when game has stopped
