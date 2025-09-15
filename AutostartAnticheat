@@ -1,10 +1,10 @@
-# AutostartAnticheat Version 0.9
+# AutostartAnticheat Version 0.2 (0.9 was previous, but I needed a new number)
 # READ BELOW BEFORE USING SCRIPT
 
 # This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. To run it with ADA, simply put ADA in the same folder and run this script.
 
 # You must set the following variables:
-# TODO
+# TODO, for now change the commands below the `print('-- Opening programs --')` code
 client = ''
 gui = ''
 
@@ -55,16 +55,15 @@ while not procchk('tf_win64.exe'): sleep(1) # wait for tf2 to open
 
 print('-- TF2 detected, waiting for it to close --')
 while procchk('tf_win64.exe'): sleep(1)
-print('-- TF2 closed, waiting 3 seconds --')
-
-sleep(3) # gives some time for MAC to upload any remaining data 
-# can't close browser tabs easily so I leave it for future me
-# future me couldn't figure out how to do this without closing the entire window
-print('-- Closing programs --')
-for item in progs:
-    item.kill()
 
 if ADA: 
     print('-- Starting AutoDemoAnalyzer --')
     import AutoDemoAnalyzer # if ada was found earlier, import and run it immediately
     AutoDemoAnalyzer.analyze(gamestarttime) # run ADA, passing through the start time
+
+# can't close browser tabs easily so I leave it for future me
+# future me couldn't figure out how to do this without closing the entire window
+# closing happens after the ADA check so that users can mark cheaters caught by it
+print('-- Closing programs --')
+for item in progs: # for loop no longer required due to progs only holding one item, this was required in the past
+    item.kill()
