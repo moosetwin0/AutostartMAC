@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 2
+# AutoDemoAnalyzer Version 3
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -29,6 +29,8 @@ analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/T
 demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
 # optional arguments to be passed to the analyzer, leave blank to just scan the demo with default settings:
 arguments = '' # example: `arguments = '-a the_best_algorithm -p'`
+# optional folder to always check for new demos:
+optfolder = '' # example: `optfolder = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/other demos'`
 
 # beyond this point is the actual code, you can finish reading here
 
@@ -41,6 +43,8 @@ import os # a lot of things
 import glob # finding demo files
 import subprocess
 
+uncheckeddemos = []
+
 def tf2chk(): # check if TF2 is open, taken from AutostartAnticheat
     for proc in psutil.process_iter():
         if proc.name() == 'tf_win64.exe':
@@ -52,12 +56,11 @@ def analyze(importedstarttime): # tf2 has closed, and both modes are synced back
     os.chdir(analyzerpath) # move to analyzer, for later
 
     # get demofiles, taken from stackoverflow
-    list_of_files = glob.glob(f'{demospath}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
-    uncheckeddemos = []
+    list_of_files = glob.glob(f'{demospath}/*.dem') + glob.glob(f'{optfolder}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
     print('** Getting new demofiles **')
     while True: # loop through latest demos
-        latest_demo = max(list_of_files, key=os.path.getctime) # get creation time of latest demo
-        if os.path.getctime(latest_demo) < gamestarttime: # if demo was made before game was started
+        latest_demo = max(list_of_files, key=os.path.getmtime) # get modification time of latest demo
+        if os.path.getmtime(latest_demo) < gamestarttime: # if demo was modified before game was started
             print('** Finished looking for demofiles, starting analysis **')
             break
         else:
