@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 3
+# AutoDemoAnalyzer Version 4
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -27,9 +27,11 @@
 analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
 demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
-# optional arguments to be passed to the analyzer, leave blank to just scan the demo with default settings:
+# optional arguments to be passed to the analyzer:
+# leave blank to just scan the demo with default settings:
 arguments = '' # example: `arguments = '-a the_best_algorithm -p'`
 # optional folder to always check for new demos:
+# leave blank to just check the demos folder:
 optfolder = '' # example: `optfolder = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/other demos'`
 
 # beyond this point is the actual code, you can finish reading here
@@ -70,6 +72,7 @@ def analyze(importedstarttime): # tf2 has closed, and both modes are synced back
 
     for demotocheck in uncheckeddemos: # use the new demos figured out previously
         # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
+        print(f"Analyzing {demotocheck}")
         _ = subprocess.run(f'"{analyzerpath}/target/release/cli.exe" -i "{demotocheck}" {arguments}') # return value of command is assigned to `_`, throwing it away (probably not necessary)
     print('** Analysis finished, press enter to exit AutoDemoAnalyzer **')
     input() 
@@ -86,5 +89,5 @@ if __name__ == "__main__": # start independent mode if ran without import
     while tf2chk(): sleep(1) # wait for tf2 to close
     analyze(None) # start analysis immediately
 else: 
-    print('** import mode detected **') # code imported, assume that this code is ran after the game has closed and that gamestarttime is a valid unix timestamp
+    print('** Import mode detected **') # code imported, assume that this code is ran after the game has closed and that gamestarttime is a valid unix timestamp
     # wait for parent program to run analyze() when game has stopped
