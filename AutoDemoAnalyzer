@@ -62,6 +62,7 @@ def tf2chk(): # check if TF2 is open, taken from AutostartAnticheat
 
 def analyze(importedstarttime): # tf2 has closed, and both modes are synced back up
     global gamestarttime
+    global uncheckeddemos
     if not __name__ == "__main__": gamestarttime = importedstarttime # have to check this again to get the variable from import
     os.chdir(analyzerpath) # move to analyzer, for later
 
