@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 5
+# AutoDemoAnalyzer Version 6
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -18,18 +18,17 @@
 # if you wish to use this as part of your own (python) autostart script:
     # place this script in the same directory as your autostart script
     # at the top of your script, put `from time import time` 
-    # in your autostart script, after it has started the game, put `gamestarttime = time()`
-    # at the end of your autostart script, (after it has closed the game) run it with `import AutoDemoAnalyzer` followed by `AutoDemoAnalyzer.analyze(gamestarttime)`
+    # in your autostart script, after it has started the game, put the lines `gamestarttime = time()`, `import AutoDemoAnalyzer`, and `AutoDemoAnalyzer.start(gamestarttime)`
 
 # regardless of what method you use, you will also need to set the following variables:
 
 # set this to the path of your demo analyzer folder:
-analyzerpath = '?' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
+analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/analysis-template-rust-main' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = '?' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
 # whether to output detections as a json file with your demo
 # leave as False to just print to the terminal
-detectfile = False # example: `detectfile = False`
+detectfile = True # example: `detectfile = False`
 # optional arguments to be passed to the analyzer:
 # leave blank to just scan the demo with default settings:
 arguments = '' # example: `arguments = '-a the_best_algorithm -p'`
@@ -60,59 +59,80 @@ def tf2chk(): # check if TF2 is open, taken from AutostartAnticheat
             return True
     return False
 
-def analyze(importedstarttime): # tf2 has closed, and both modes are synced back up
+checkeddemos = []
+
+# this is bad code but it works
+def getnewdemos(importedstarttime):
+    global checkeddemos
     global gamestarttime
     global uncheckeddemos
     if not __name__ == "__main__": gamestarttime = importedstarttime # have to check this again to get the variable from import
-    os.chdir(analyzerpath) # move to analyzer, for later
-
     # get demofiles, taken from stackoverflow
-    list_of_files = glob.glob(f'{demospath}/*.dem') + glob.glob(f'{optfolder}/*.dem') # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
-    print('** Getting new demofiles **')
-    while True: # loop through latest demos
-        latest_demo = max(list_of_files, key=os.path.getmtime) # get modification time of latest demo
+    # at this rate it might be better to use sets than lists but I have been working on this for a full hour and I want it to be over
+    # list_of_files is a legacy name and should be changed
+    list_of_files = list(set(glob.glob(f'{demospath}/*.dem') + glob.glob(f'{optfolder}/*.dem')) - set(checkeddemos)) # note: glob gives paths in a weird mixed `path/path/path\\file.dem` format
+    #if debug: list_of_files = ['E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos\\2025-09-23_09-42-09.dem']
+    if not list_of_files: return [] # if there are no unchecked demos, return 
+    checkeddemos = list(set(checkeddemos + list_of_files)) # merge two lists, ignoring duplicates
+    if len(list_of_files) > 1: latest_demo = max(list_of_files, key=os.path.getmtime) # if applicable, sort demos by newest modified
+    for latest_demo in list_of_files: # loop through latest demos
         if os.path.getmtime(latest_demo) < gamestarttime: # if demo was modified before game was started
-            print('** Finished looking for demofiles, starting analysis **')
             break
-        print(f'** {latest_demo} is a new demo and will be analyzed **')
         uncheckeddemos.append(latest_demo.replace('\\','/')) # add demo to list, without the weird glob formatting
         list_of_files.remove(latest_demo) # remove the demo from the previous list, so that we don't keep adding the same demo over and over
-    if debug: 
-        print('** Debug mode detected, using example demo **')
-        uncheckeddemos = ['E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos/2025-09-23_09-42-09.dem']
+    return uncheckeddemos
 
-    for demotocheck in uncheckeddemos: # use the new demos figured out previously
-        # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
-        print(f"** Analyzing {demotocheck} **")
-        # from https://stackoverflow.com/a/28319191, required to keep live printing while adding file write functionality 
-        linelist = []
-        cmd = f'"{analyzerpath}/target/release/cli.exe" -i "{demotocheck}" {arguments}' # not necessary, just looks nicer
-        with Popen(cmd, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-            for line in p.stdout:
-                print(line, end='') # process line here
-                linelist.append(line)
-        if p.returncode != 0:
-            raise CalledProcessError(p.returncode, p.args)
-        if detectfile:
-            analysisfile = demotocheck.strip('.dem') + ' analysis.json' # create file in same folder as demo
-            with open(f"{analysisfile}", 'w') as file:
-                for item in linelist:
-                    file.write(item) # write output, line by line
-    print('** Analysis finished, press enter to exit AutoDemoAnalyzer **')
-    input() 
+def analyze(demotoanalyze):
+    # run the analyzer, probably not the best way to do this but I couldn't be bothered to figure out rust
+    print(f"** Analyzing {demotoanalyze} **")
+    # from https://stackoverflow.com/a/28319191, required to keep live printing while adding file write functionality 
+    linelist = []
+    os.chdir(analyzerpath) # move to analyzer
+    cmd = f'"{analyzerpath}/target/release/cli.exe" -i "{demotoanalyze}" {arguments}' # not necessary, just looks nicer
+    with Popen(cmd, stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+        for line in p.stdout:
+            print(line, end='') # process line here
+            linelist.append(line)
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, p.args)
+    if detectfile: # if we should write to file
+        analysisfile = demotoanalyze.strip('.dem') + ' analysis.json' # create file in same folder as demo
+        with open(f"{analysisfile}", 'w') as file:
+            for item in linelist:
+                file.write(item) # write output, line by line
+
+def inuse(file): # check if file is in use
+    try: os.rename(file, file)
+    except WindowsError: return True
+    else: return False
+
+
+def init(gamestarttime): # this is not good but I need to pass through the gamestarttime variable
+    lockeddemos = []
+    while tf2chk(): 
+        sleep(1) # wait for tf2 to close
+        newdemos = getnewdemos(gamestarttime) # returns any demos made since TF2 has started, excluding any already checked
+        for newdemo in newdemos: # could probably be merged into getnewdemos()
+            if inuse(newdemo): 
+                lockeddemos.append(newdemo)
+        for lockeddemo in lockeddemos:
+            if not inuse(lockeddemo):
+                analyze(lockeddemo)
+                lockeddemos.remove(lockeddemo)
+
+        #if debug: break
+    print('** Press Enter to exit AutoDemoAnalyzer **')
+    input()
 
 # warning: this code does not check that gamestarttime is a valid unix timestamp, and there will be an exception later if it isn't
-if __name__ == "__main__": # start independent mode if ran without import
+if __name__ == "__main__": # create gamestarttime if ran without import
     print('** Independent mode detected **')
     # some below code also taken from AA
-    if not debug:
+    if not debug: # don't wait for game to open if in debug mode
         print('** Waiting for TF2 to open **')
         while not tf2chk(): sleep(1) # wait for tf2 to open
     gamestarttime = time()
     print('** Waiting for TF2 to close **')
-    sleep(5) # buffer in case of weird stuff, may not be needed
-    while tf2chk(): sleep(1) # wait for tf2 to close
-    analyze(None) # start analysis immediately
-else: 
-    print('** Import mode detected **') # code imported, assume that this code is ran after the game has closed and that gamestarttime is a valid unix timestamp
-    # wait for parent program to run analyze() when game has stopped
+    init(gamestarttime)
+else:
+    print('** Import mode detected **')
