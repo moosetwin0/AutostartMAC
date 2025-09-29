@@ -25,7 +25,7 @@
 # set this to the path of your demo analyzer folder:
 analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = ''
+demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
 # whether to output detections as a json file with your demo
 # leave as False to just print to the terminal
 detectfile = True # example: `detectfile = False`
