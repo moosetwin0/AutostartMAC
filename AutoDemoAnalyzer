@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 6.2
+# AutoDemoAnalyzer Version 6.3
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -6,8 +6,6 @@
 
 # the demo analyzer can be found at https://github.com/MegaAntiCheat/analysis-template-rust, do not use the /demolyzer repository
 # make sure that you have analyzed a demofile before, so that it generates the cli.exe file
-
-# NOTICE: independent mode is the only one currently implemented, the others will be when I have the time
 
 # if you wish to run this in independant mode (without an autostart script): 
     # run the script when booting up the game (or at any point before starting to record any demos)
@@ -18,14 +16,15 @@
 # if you wish to use this as part of your own (python) autostart script:
     # place this script in the same directory as your autostart script
     # at the top of your script, put `from time import time` 
-    # in your autostart script, after it has started the game, put the lines `gamestarttime = time()`, `import AutoDemoAnalyzer`, and `AutoDemoAnalyzer.start(gamestarttime)`
+    # in your autostart script, after it has started the game, put the lines `gamestarttime = time()` and `import AutoDemoAnalyzer` 
+    # put `AutoDemoAnalyzer.mainloop(gamestarttime) in your main (waiting for the game to close) loop
 
 # regardless of what method you use, you will also need to set the following variables:
 
 # set this to the path of your demo analyzer folder:
 analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+demospath = ''`
 # whether to output detections as a json file with your demo
 # leave as False to just print to the terminal
 detectfile = True # example: `detectfile = False`
@@ -96,7 +95,7 @@ def analyze(demotoanalyze):
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, p.args)
     if detectfile: # if we should write to file
-        analysisfile = demotoanalyze.strip('.dem') + ' analysis.json' # create file in same folder as demo
+        analysisfile = demotoanalyze.strip('.dem') + ' analysis.txt' # create file in same folder as demo
         with open(f"{analysisfile}", 'w') as file:
             for item in linelist:
                 file.write(item) # write output, line by line
@@ -107,34 +106,35 @@ def inuse(file): # check if file is in use
     else: return False
 
 
-def init(gamestarttime): # this is not good but I need to pass through the gamestarttime variable
-    lockeddemos = []
-    sleep(5)
-    while tf2chk(): 
-        sleep(1) # wait for tf2 to close
-        newdemos = getnewdemos(gamestarttime) # returns any demos made since TF2 has started, excluding any already checked
-        for newdemo in newdemos: # could probably be merged into getnewdemos()
-            if inuse(newdemo): 
-                lockeddemos.append(newdemo)
-        for lockeddemo in lockeddemos:
-            if not inuse(lockeddemo):
-                analyze(lockeddemo)
-                lockeddemos.remove(lockeddemo)
-
-        #if debug: break
-    print('** Press Enter to exit AutoDemoAnalyzer **')
-    input()
-    raise SystemExit # exit
+def mainloop(gamestarttime): # this is not good but I need to pass through the gamestarttime variable
+    newdemos = getnewdemos(gamestarttime) # returns any demos made since TF2 has started, excluding any already checked
+    for newdemo in newdemos: # could probably be merged into getnewdemos()
+        if inuse(newdemo): 
+            print('** New demo created **')
+            lockeddemos.append(newdemo)
+    for lockeddemo in lockeddemos:
+        if not inuse(lockeddemo):
+            analyze(lockeddemo)
+            lockeddemos.remove(lockeddemo)
 
 # warning: this code does not check that gamestarttime is a valid unix timestamp, and there will be an exception later if it isn't
+lockeddemos = [] # used in either mode
 if __name__ == "__main__": # create gamestarttime if ran without import
-    print('** Independent mode detected **')
+    print('** ADA started in independent mode **')
+
     # some below code also taken from AA
     if not debug: # don't wait for game to open if in debug mode
         print('** Waiting for TF2 to open **')
         while not tf2chk(): sleep(1) # wait for tf2 to open
+
     gamestarttime = time()
     print('** Waiting for TF2 to close **')
-    init(gamestarttime)
-else:
-    print('** Import mode detected **')
+    sleep(3) # required, game can be a bit screwy when starting
+    while tf2chk(): 
+        sleep(1) # wait for tf2 to close
+        mainloop(gamestarttime)
+
+    print('** Press Enter to exit AutoDemoAnalyzer **') # let user read output before exiting
+    input()
+
+else: print('** ADA started in import mode **')
