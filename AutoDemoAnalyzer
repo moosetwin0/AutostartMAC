@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 6
+# AutoDemoAnalyzer Version 6.1
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -23,9 +23,9 @@
 # regardless of what method you use, you will also need to set the following variables:
 
 # set this to the path of your demo analyzer folder:
-analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/analysis-template-rust-main' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
+analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
 # whether to output detections as a json file with your demo
 # leave as False to just print to the terminal
 detectfile = True # example: `detectfile = False`
