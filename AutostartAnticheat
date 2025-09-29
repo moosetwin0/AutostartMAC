@@ -1,4 +1,4 @@
-# AutostartAnticheat Version 0.3
+# AutostartAnticheat Version 0.4
 # READ BELOW BEFORE USING SCRIPT
 
 # This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. To run it with ADA, simply put ADA in the same folder and run this script.
@@ -8,7 +8,7 @@
 client = ''
 gui = ''
 
-# beyond this point is the actual code, you can finish reading now
+# beyond this point is the actual code, you can finish reading here
 
 
 
@@ -40,20 +40,23 @@ webopen("steam://rungameid/440") # if commented out during debugging, make sure 
 altopen('E:\\SteamLibrary\\steamapps\\common\\Team Fortress 2\\megaanticheat stuff','client_backend.exe')
 os.popen("E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/gui/index.html")
 
-# taken from stackoverflow
-if util.find_spec("AutoDemoAnalyzer") is not None: # check to see if ada is found
-    print('-- AutoDemoAnalyzer detected, launching --')
-    gamestarttime = time() # save timestamp for autodemoanalyzer
-    import AutoDemoAnalyzer as ADA
-    ADA.init(gamestarttime)
-
-sleep(3) # buffer in case it opens and closes rapidly or something, takes a while to start tf2 anyways
+sleep(3) # required, game can be a bit screwy when starting
 
 print('-- Waiting for TF2 --')
 while not procchk('tf_win64.exe'): sleep(1) # wait for tf2 to open
 
+# taken from stackoverflow
+ADAfound = False
+if util.find_spec("AutoDemoAnalyzer") is not None: # check to see if ada is found
+    ADAfound = True
+    print('-- Launching AutoDemoAnalyzer --')
+    gamestarttime = time() # save timestamp for autodemoanalyzer
+    import AutoDemoAnalyzer as ADA
+
 print('-- TF2 detected, waiting for it to close --')
-while procchk('tf_win64.exe'): sleep(1)
+while procchk('tf_win64.exe'): 
+    sleep(1) # wait for tf2 to close
+    if ADAfound: ADA.mainloop(gamestarttime)
 
 # can't close browser tabs easily so I leave it for future me
 # future me couldn't figure out how to do this without closing the entire window
@@ -61,3 +64,8 @@ while procchk('tf_win64.exe'): sleep(1)
 print('-- Closing programs --')
 for item in progs: # for loop no longer required due to progs only holding one item, this was required in the past
     item.kill()
+
+# let user read ADA output before exiting
+if ADAfound:
+    print('** Press Enter to exit AutoDemoAnalyzer **')
+    input()
