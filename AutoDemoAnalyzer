@@ -1,4 +1,4 @@
-# AutoDemoAnalyzer Version 6.1
+# AutoDemoAnalyzer Version 6.2
 # READ BELOW BEFORE USING SCRIPT
 
 # this code can be ran as part of a MAC-autostart script, or on its own.
@@ -25,7 +25,7 @@
 # set this to the path of your demo analyzer folder:
 analyzerpath = '' # example: `analyzerpath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/analysis-template-rust-main'`
 # set this to the path of your TF2 demos folder:
-demospath = '' # example: `demospath = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/tf/demos'`
+demospath = ''
 # whether to output detections as a json file with your demo
 # leave as False to just print to the terminal
 detectfile = True # example: `detectfile = False`
@@ -109,6 +109,7 @@ def inuse(file): # check if file is in use
 
 def init(gamestarttime): # this is not good but I need to pass through the gamestarttime variable
     lockeddemos = []
+    sleep(5)
     while tf2chk(): 
         sleep(1) # wait for tf2 to close
         newdemos = getnewdemos(gamestarttime) # returns any demos made since TF2 has started, excluding any already checked
@@ -123,6 +124,7 @@ def init(gamestarttime): # this is not good but I need to pass through the games
         #if debug: break
     print('** Press Enter to exit AutoDemoAnalyzer **')
     input()
+    raise SystemExit # exit
 
 # warning: this code does not check that gamestarttime is a valid unix timestamp, and there will be an exception later if it isn't
 if __name__ == "__main__": # create gamestarttime if ran without import
