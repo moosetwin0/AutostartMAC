@@ -1,11 +1,12 @@
-# AutostartAnticheat Version 0.4
+# AutostartAnticheat Version 1.0
 # READ BELOW BEFORE USING SCRIPT
 
 # This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. To run it with ADA, simply put ADA in the same folder and run this script.
 
-# You must set the following variables:
-# TODO, for now change the commands below the `print('-- Opening programs --')` code
+# You must set these variables to the paths of your client_backend and index.html files
+# ex. `client = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/client_backend.exe'``
 client = ''
+# ex. `gui = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/gui/index.html'`
 gui = ''
 
 # beyond this point is the actual code, you can finish reading here
@@ -35,10 +36,14 @@ def procchk(process): # process must be string of file name.extension, e.g. 'Tas
             return True
     return False # else statement not needed, I feel clever hehehe
 
+# format client string for altopen() 
+client = client.rsplit('/', 1)
+client[0] = client[0].replace('/', '\\')
+
 print('-- Opening programs --')
 webopen("steam://rungameid/440") # if commented out during debugging, make sure to uncomment
-altopen('E:\\SteamLibrary\\steamapps\\common\\Team Fortress 2\\megaanticheat stuff','client_backend.exe')
-os.popen("E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/gui/index.html")
+altopen(client[0], client[1])
+os.popen(gui)
 
 sleep(3) # required, game can be a bit screwy when starting
 
@@ -58,14 +63,14 @@ while procchk('tf_win64.exe'):
     sleep(1) # wait for tf2 to close
     if ADAfound: ADA.mainloop(gamestarttime)
 
+# let user read ADA output before exiting
+if ADAfound:
+    print('** Press Enter to exit AutoDemoAnalyzer **')
+    input()
+
 # can't close browser tabs easily so I leave it for future me
 # future me couldn't figure out how to do this without closing the entire window
 # closing happens after the ADA check so that users can mark cheaters caught by it
 print('-- Closing programs --')
 for item in progs: # for loop no longer required due to progs only holding one item, this was required in the past
     item.kill()
-
-# let user read ADA output before exiting
-if ADAfound:
-    print('** Press Enter to exit AutoDemoAnalyzer **')
-    input()
