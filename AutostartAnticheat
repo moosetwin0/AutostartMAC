@@ -1,76 +1,77 @@
-# AutostartAnticheat Version 1.0
+# AutostartMAC Version 2-Linux
 # READ BELOW BEFORE USING SCRIPT
 
-# This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. To run it with ADA, simply put ADA in the same folder and run this script.
+# This code can be ran on its own, or with AutoDemoAnalyzer for additional functionality. 
+# To run this with ADA, place it in the same directory.
 
-# You must set these variables to the paths of your client_backend and index.html files
-# ex. `client = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/client_backend.exe'``
+# Set this variable to the absolute path of your client_backend file
+# ex. `client = '/steamapps/common/Team Fortress 2/megaanticheat stuff/client_backend'``
 client = ''
-# ex. `gui = 'E:/SteamLibrary/steamapps/common/Team Fortress 2/megaanticheat stuff/gui/index.html'`
+
+# Set this variable to the web interface link MAC gives you
+# ex. `gui = 'http://127.0.0.1:1984'`
 gui = ''
 
 # beyond this point is the actual code, you can finish reading here
 
 
 
-from time import sleep, time
-import os
+
+
+from time import sleep
+from os import path
 from webbrowser import open as webopen
-import psutil
+from psutil import process_iter
 from subprocess import Popen
 from importlib import util
 
-# used when it is required to run a thing while continuing to execute
-# I PUT THE POPEN INTO A LIST MUAHUAHUA
-# this is terrible but I couldn't find a better way to run these simulataneously
-progs = []
-def altopen(dir, filename):
-    if not ':' in dir: dir = os.path.expanduser(dir)
-    progs.append(Popen(f"{dir + '\\' + filename}", cwd=f"{dir}", stdout = None, stderr = None)) #, shell=True
-
-# check if a process is open
-# may cause exception, me pls fix
-def procchk(process): # process must be string of file name.extension, e.g. 'Taskmgr.exe'
-    for proc in psutil.process_iter():
-        if proc.name() == process:
+def tf2chk(): # check if TF2 is open
+    for proc in process_iter():
+        if proc.name() == 'tf_linux64':
             return True
-    return False # else statement not needed, I feel clever hehehe
+    return False
 
-# format client string for altopen() 
-client = client.rsplit('/', 1)
-client[0] = client[0].replace('/', '\\')
+# used when it is required to run a thing while continuing execution
+progs = []
+def altopen(filepath):
+    # progs list used later to close any programs launched with altopen
+    progs.append(Popen(filepath, cwd=path.split(filepath)[0], stdout = None, stderr = None)) # cwd = relative path, ex. /a/b/ from a/b/c.file
 
-print('-- Opening programs --')
-webopen("steam://rungameid/440") # if commented out during debugging, make sure to uncomment
-altopen(client[0], client[1])
-os.popen(gui)
+try: # not actually trying to catch any exceptions, just making sure that MAC closes properly
 
-sleep(3) # required, game can be a bit screwy when starting
+    webopen("steam://rungameid/440") # if commented out during debugging, make sure to uncomment
+    altopen(client)
+    print('-- Waiting for TF2 --')
+    sleep(10) # required, game can be a bit screwy when starting
 
-print('-- Waiting for TF2 --')
-while not procchk('tf_win64.exe'): sleep(1) # wait for tf2 to open
+    while not tf2chk(): sleep(1) # wait for tf2 to open
 
-# taken from stackoverflow
-ADAfound = False
-if util.find_spec("AutoDemoAnalyzer") is not None: # check to see if ada is found
-    ADAfound = True
-    print('-- Launching AutoDemoAnalyzer --')
-    gamestarttime = time() # save timestamp for autodemoanalyzer
-    import AutoDemoAnalyzer as ADA
+    webopen(gui) # do this later so that MAC has time to initialize
 
-print('-- TF2 detected, waiting for it to close --')
-while procchk('tf_win64.exe'): 
-    sleep(1) # wait for tf2 to close
-    if ADAfound: ADA.mainloop(gamestarttime)
+    # partially taken from stackoverflow
+    ADAfound = False
+    if util.find_spec("AutoDemoAnalyzer") is not None: # check to see if ada is found
+        ADAfound = True
+        print('-- Launching AutoDemoAnalyzer --')
+        import AutoDemoAnalyzer as ADA
 
-# let user read ADA output before exiting
-if ADAfound:
-    print('** Press Enter to exit AutoDemoAnalyzer **')
-    input()
+    while tf2chk():
+        if ADAfound: ADA.mainloop()
+        sleep(1) # wait for tf2 to close
 
-# can't close browser tabs easily so I leave it for future me
-# future me couldn't figure out how to do this without closing the entire window
-# closing happens after the ADA check so that users can mark cheaters caught by it
-print('-- Closing programs --')
-for item in progs: # for loop no longer required due to progs only holding one item, this was required in the past
-    item.kill()
+    # let user read ADA output before exiting
+    if ADAfound:
+        print('*- Press Enter to exit -*')
+        input()
+
+    # can't close browser tabs easily so I leave it for future me
+    # future me couldn't figure out how to do this without closing the entire window
+    # closing happens after the ADA check so that users can mark cheaters caught by it
+    print('-- Closing programs --')
+    for item in progs: # close programs launched with altopen() earlier
+        item.kill()
+
+except Exception: # make sure MAC closes, this probably could be merged with the above using a `finally` but it's fine
+    for item in progs: # close programs to prevent memory leak
+        item.kill()
+    raise
