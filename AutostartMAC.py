@@ -1,4 +1,4 @@
-# AutostartMAC Version 5
+# AutostartMAC Version 6
 # READ BELOW BEFORE USING SCRIPT
 
 
@@ -133,12 +133,13 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
         while not tf2chk(): 
             sleep(1) # wait for tf2 to open
             if debug: print('!! TF2 not open !!')
-        print('!! TF2 now open !!')
+        if debug: print('!! TF2 now open !!')
 
         if MACtoggle: webopen(gui) # do this later so that MAC has time to initialize
 
     demolist = getdemos()
     demosToAnalyze = []
+    oldestdemo = ''
     while tf2chk() or testanalyzer: # exit if tf2 is closed without any demos queued
         if ADAtoggle: 
             # get any new demos
@@ -147,14 +148,15 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
                 demosToAnalyze = [os.path.abspath('cheater test demo.dem')]
             try: # if there is a demo to check for
                 # the oldest demo will always be at index 0 due to how lists work
+                if oldestdemo != demosToAnalyze[0]:
+                    print('-- New demo found --')
                 oldestdemo = demosToAnalyze[0] # for code readability
-                print('-- New demo found --')
+                demolist.add(oldestdemo) # add demo to demolist so it doesn't get added to demosToAnalyze again
                 # if oldest demo hasn't been modified for 3 seconds
                 if (time() - os.path.getmtime(oldestdemo) >= 3): 
                     if debug: print('!! analyzing new demo !!')
                     analyze(oldestdemo)
                     demosToAnalyze.pop(0) # demo has been analyzed, remove it from queue
-                    demolist.add(demosToAnalyze[0]) # add demo to demolist so it doesn't get re-added to demosToAnalyze
             except IndexError: pass # no demos to analyze, continue
 
             if testanalyzer:
