@@ -1,4 +1,4 @@
-# AutostartMAC Version 6
+# AutostartMAC Version 7
 # READ BELOW BEFORE USING SCRIPT
 
 
@@ -6,8 +6,7 @@
 ADAtoggle = True # ex. `ADAtoggle = False`
 
 # You can turn on/off the MAC functionality here:
-# MAC is currently broken so it's off by default
-MACtoggle = False # ex. `MACtoggle = False`
+MACtoggle = True # ex. `MACtoggle = False`
 
 # Set this variable to the path of your client_backend file 
 # ex. `anticheat = '~/.steam/steam/steamapps/common/Team Fortress 2/megaanticheat stuff/client_backend'`
@@ -108,9 +107,9 @@ def analyze(demotoanalyze):
 
 # used when it is required to run a thing while continuing execution
 progs = []
-def altopen(filepath):
+def altopen(file):
     # progs list used later to close any programs launched with altopen
-    progs.append(Popen(filepath, cwd=path.split(filepath)[0], stdout = None, stderr = None)) # cwd = relative path, ex. /a/b/ from a/b/c.file
+    progs.append(Popen(file, cwd=os.path.dirname(file), stdout = None, stderr = None)) # cwd = relative path, ex. /a/b/ from a/b/c.file
 
 testanalyzer = False
 if debug:
@@ -176,7 +175,7 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
     print('-- Closing programs --')
 
 except Exception: # create crashlog for debugging
-    with open("crash.log", "w") as logfile:
+    with open(f"{os.getcwd()}/crash.log", "w") as logfile: # create file in current directory
         traceback.print_exc(file=logfile)
     raise
 
