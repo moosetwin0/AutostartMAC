@@ -1,4 +1,4 @@
-# AutostartMAC Version 7
+# AutostartMAC Version 8
 # READ BELOW BEFORE USING SCRIPT
 
 
@@ -131,7 +131,6 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
 
         while not tf2chk(): 
             sleep(1) # wait for tf2 to open
-            if debug: print('!! TF2 not open !!')
         if debug: print('!! TF2 now open !!')
 
         if MACtoggle: webopen(gui) # do this later so that MAC has time to initialize
@@ -151,8 +150,8 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
                     print('-- New demo found --')
                 oldestdemo = demosToAnalyze[0] # for code readability
                 demolist.add(oldestdemo) # add demo to demolist so it doesn't get added to demosToAnalyze again
-                # if oldest demo hasn't been modified for 3 seconds
-                if (time() - os.path.getmtime(oldestdemo) >= 3): 
+                # if oldest demo hasn't been modified for 75 seconds or a new demo is made
+                if (time() - os.path.getmtime(oldestdemo) >= 75) or len(demosToAnalyze) >= 2: 
                     if debug: print('!! analyzing new demo !!')
                     analyze(oldestdemo)
                     demosToAnalyze.pop(0) # demo has been analyzed, remove it from queue
@@ -160,7 +159,7 @@ try: # not actually trying to catch any exceptions, just making sure that MAC cl
 
             if testanalyzer:
                 break # only scan test demo once
-    sleep(1) # rate of checking for tf2 to close/if there are any new demos
+        sleep(1) # rate of checking for tf2 to close/if there are any new demos
 
     # once TF2 has closed: if there are any remaining demos, analyze them
     for demo in demosToAnalyze:
@@ -180,5 +179,6 @@ except Exception: # create crashlog for debugging
     raise
 
 finally: # make sure MAC closes
+    sleep(1)
     for item in progs:
-        item.kill()
+        item.terminate() # terminate used as otherwise client_backend won't close properly (for some reason)
